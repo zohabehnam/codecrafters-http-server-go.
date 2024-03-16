@@ -32,7 +32,8 @@ func main() {
 		fmt.Println("Error reading", err)
 		return
 	}
-	firstLine := strings.Split(string(buffer), "\r\n")[0]
+	req := string(buffer)
+	firstLine := strings.Split(req, "\r\n")[0]
 	path := strings.Fields(firstLine)[1]
 	if path == "/" {
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
@@ -40,14 +41,21 @@ func main() {
 		body := strings.SplitAfterN(path, "/", 3)
 		content := body[len(body)-1]
 		conn.Write([]byte(fmtResponseContent(content)))
+	} else if strings.HasPrefix(path, "/user-agent") {
+		thirdLine := strings.Split(req, "\r\n")[2]
+		userAgent := strings.TrimSpace(strings.Split(thirdLine, ":")[1])
+		conn.Write([]byte(fmtResponseContent(userAgent)))
 	} else {
 		conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
 	}
 }
 
 func fmtResponseContent(content string) string {
+	return fmt.Sprint(fmtResponse(content) + content)
+}
+
+func fmtResponse(content string) string {
 	return fmt.Sprintf(
-		"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s",
-		len(content),
-		content)
+		"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n",
+		len(content))
 }
