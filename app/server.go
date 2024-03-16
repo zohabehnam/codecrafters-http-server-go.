@@ -83,17 +83,30 @@ func handleConnection(conn net.Conn, directory string)  {
 		thirdLine := strings.Split(req, "\r\n")[2]
 		userAgent := strings.TrimSpace(strings.Split(thirdLine, ":")[1])
 		conn.Write([]byte(fmtResponseContent(userAgent)))
+	}  else if strings.HasPrefix(path, "/files") && method == "GET" {
+		body := strings.SplitAfterN(path, "/", 3)
+		fileName := body[len(body)-1]
+		bytes, err := os.ReadFile(fmt.Sprintf("%s/%s", directory, fileName))
+		if err != nil {
+			conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
+			return
+		}
+		conn.Write([]byte(fmtFileResponse(string(bytes))))
 	} else {
 		conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
 	}
 }
 
 func fmtResponseContent(content string) string {
-	return fmt.Sprint(fmtResponse(content) + content)
+	return fmt.Sprint(fmtResponse(content, "text/plain") + content)
+}
+func fmtFileResponse(content string) string {
+	return fmt.Sprint(fmtResponse(content, "application/octet-stream") + content)
 }
 
-func fmtResponse(content string) string {
+func fmtResponse(content string, contentType string) string {
 	return fmt.Sprintf(
-		"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n",
+		"HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n",
+		contentType,
 		len(content))
 }
