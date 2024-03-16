@@ -7,11 +7,14 @@ import (
 	"os"
 	"strings"
 	"log"
+	"flag"
 )
 
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
+	directory := flag.String("directory", "", "path to server directory")
+	flag.Parse()
 
 	// Uncomment this block to pass the first stage
 	//
@@ -28,7 +31,7 @@ func main() {
 			fmt.Println("Error accepting connection: ", err.Error())
 			os.Exit(1)
 		}
-		go handleConnection(conn)
+		go handleConnection(conn, *directory)
 	}
 	// buffer := make([]byte, 1024)
 	// _, err = conn.Read(buffer)
@@ -54,7 +57,7 @@ func main() {
 	// }
 }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn, directory string)  {
 	defer conn.Close()
 	buffer := make([]byte, 1024)
 	_, err := conn.Read(buffer)
@@ -65,6 +68,7 @@ func handleConnection(conn net.Conn) {
 	req := string(buffer)
 	// log.Printf("Request: %s", req)
 	firstLine := strings.Split(req, "\r\n")[0]
+	method := strings.Fields(firstLine)[0]
 	path := strings.Fields(firstLine)[1]
 	log.Println(req)
 	if path == "/" {
