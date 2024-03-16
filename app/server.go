@@ -32,13 +32,22 @@ func main() {
 		fmt.Println("Error reading", err)
 		return
 	}
-	req := string(buffer)
-	fmt.Println(string(req))
-	firstLine := strings.Split(string(req), "\r\n")[0]
+	firstLine := strings.Split(string(buffer), "\r\n")[0]
 	path := strings.Fields(firstLine)[1]
 	if path == "/" {
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+	} else if strings.HasPrefix(path, "/echo") {
+		body := strings.SplitAfterN(path, "/", 3)
+		content := body[len(body)-1]
+		conn.Write([]byte(fmtResponseContent(content)))
 	} else {
 		conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
 	}
+}
+
+func fmtResponseContent(content string) string {
+	return fmt.Sprintf(
+		"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s",
+		len(content),
+		content)
 }
