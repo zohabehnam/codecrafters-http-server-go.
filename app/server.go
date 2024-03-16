@@ -5,6 +5,7 @@ import (
 	// Uncomment this block to pass the first stage
 	"net"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -19,10 +20,25 @@ func main() {
 		os.Exit(1)
 	}
 	
+	defer l.Close()
 	conn, err := l.Accept()
 	if err != nil {
 		fmt.Println("Error accepting connection: ", err.Error())
 		os.Exit(1)
 	}
-	conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+	buffer := make([]byte, 1024)
+	_, err = conn.Read(buffer)
+	if err != nil {
+		fmt.Println("Error reading", err)
+		return
+	}
+	req := string(buffer)
+	fmt.Println(string(req))
+	firstLine := strings.Split(string(req), "\r\n")[0]
+	path := strings.Fields(firstLine)[1]
+	if path == "/" {
+		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+	} else {
+		conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
+	}
 }
