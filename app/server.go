@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"log"
 )
 
 func main() {
@@ -21,20 +22,51 @@ func main() {
 	}
 	
 	defer l.Close()
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			os.Exit(1)
+		}
+		go handleConnection(conn)
 	}
+	// buffer := make([]byte, 1024)
+	// _, err = conn.Read(buffer)
+	// if err != nil {
+	// 	fmt.Println("Error reading", err)
+	// 	return
+	// }
+	// req := string(buffer)
+	// firstLine := strings.Split(req, "\r\n")[0]
+	// path := strings.Fields(firstLine)[1]
+	// if path == "/" {
+	// 	conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+	// } else if strings.HasPrefix(path, "/echo") {
+	// 	body := strings.SplitAfterN(path, "/", 3)
+	// 	content := body[len(body)-1]
+	// 	conn.Write([]byte(fmtResponseContent(content)))
+	// } else if strings.HasPrefix(path, "/user-agent") {
+	// 	thirdLine := strings.Split(req, "\r\n")[2]
+	// 	userAgent := strings.TrimSpace(strings.Split(thirdLine, ":")[1])
+	// 	conn.Write([]byte(fmtResponseContent(userAgent)))
+	// } else {
+	// 	conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
+	// }
+}
+
+func handleConnection(conn net.Conn) {
+	defer conn.Close()
 	buffer := make([]byte, 1024)
-	_, err = conn.Read(buffer)
+	_, err := conn.Read(buffer)
 	if err != nil {
 		fmt.Println("Error reading", err)
 		return
 	}
 	req := string(buffer)
+	// log.Printf("Request: %s", req)
 	firstLine := strings.Split(req, "\r\n")[0]
 	path := strings.Fields(firstLine)[1]
+	log.Println(req)
 	if path == "/" {
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 	} else if strings.HasPrefix(path, "/echo") {
@@ -42,6 +74,8 @@ func main() {
 		content := body[len(body)-1]
 		conn.Write([]byte(fmtResponseContent(content)))
 	} else if strings.HasPrefix(path, "/user-agent") {
+		// body := strings.SplitAfterN(path, "/", 3)
+		// content := body[len(body)-1]
 		thirdLine := strings.Split(req, "\r\n")[2]
 		userAgent := strings.TrimSpace(strings.Split(thirdLine, ":")[1])
 		conn.Write([]byte(fmtResponseContent(userAgent)))
